@@ -2,17 +2,16 @@
   "name": "foam-vscode",
   "displayName": "Foam for VSCode (Wikilinks to Markdown)",
   "description": "Generate markdown reference lists from wikilinks in a workspace",
-  "author": "Jani Eväkallio",
   "repository": {
     "url": "https://github.com/foambubble/foam",
     "type": "git"
   },
   "homepage": "https://github.com/foambubble/foam",
-  "version": "0.7.7",
+  "version": "0.9.1",
   "license": "MIT",
   "publisher": "foam",
   "engines": {
-    "vscode": "^1.45.1"
+    "vscode": "^1.47.1"
   },
   "icon": "icon/FOAM_ICON_256.png",
   "categories": [
@@ -23,6 +22,7 @@
     "onView:foam-vscode.tags-explorer",
     "onCommand:foam-vscode.update-wikilinks",
     "onCommand:foam-vscode.open-daily-note",
+    "onCommand:foam-vscode.open-random-note",
     "onCommand:foam-vscode.janitor",
     "onCommand:foam-vscode.copy-without-brackets",
     "onCommand:foam-vscode.show-graph",
@@ -38,6 +38,46 @@
           "name": "Tag Explorer",
           "icon": "media/dep.svg",
           "contextualTitle": "Tags Explorer"
+        },
+        {
+          "id": "foam-vscode.orphans",
+          "name": "Orphans",
+          "icon": "media/dep.svg",
+          "contextualTitle": "Orphans"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "foam-vscode.tags-explorer",
+        "contents": "No tags found. Notes that contain tags will show up here. You may add tags to a note with a hashtag (#tag) or by adding a tag list to the front matter (tags: tag1, tag2)."
+      },
+      {
+        "view": "foam-vscode.orphans",
+        "contents": "No orphans found. Notes that have no backlinks nor links will show up here."
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "foam-vscode.group-orphans-by-folder",
+          "when": "view == foam-vscode.orphans && foam-vscode.orphans-grouped-by-folder == false",
+          "group": "navigation"
+        },
+        {
+          "command": "foam-vscode.group-orphans-off",
+          "when": "view == foam-vscode.orphans && foam-vscode.orphans-grouped-by-folder == true",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "foam-vscode.group-orphans-by-folder",
+          "when": "false"
+        },
+        {
+          "command": "foam-vscode.group-orphans-off",
+          "when": "false"
         }
       ]
     },
@@ -59,6 +99,10 @@
         "title": "Foam: Open Daily Note"
       },
       {
+        "command": "foam-vscode.open-random-note",
+        "title": "Foam: Open Random Note"
+      },
+      {
         "command": "foam-vscode.janitor",
         "title": "Foam: Run Janitor (Experimental)"
       },
@@ -73,6 +117,16 @@
       {
         "command": "foam-vscode.create-new-template",
         "title": "Foam: Create New Template"
+      },
+      {
+        "command": "foam-vscode.group-orphans-by-folder",
+        "title": "Foam: Group Orphans By Folder",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "foam-vscode.group-orphans-off",
+        "title": "Foam: Don't Group Orphans",
+        "icon": "$(list-flat)"
       }
     ],
     "configuration": {
@@ -143,6 +197,30 @@
           "default": null,
           "description": "The directory into which daily notes should be created. Defaults to the workspace root."
         },
+        "foam.orphans.exclude": {
+          "type": [
+            "array"
+          ],
+          "default": [],
+          "markdownDescription": "Specifies the list of glob patterns that will be excluded from the orphans report. To ignore the all the content of a given folder, use `**<folderName>/**/*`",
+          "scope": "resource"
+        },
+        "foam.orphans.groupBy": {
+          "type": [
+            "string"
+          ],
+          "enum": [
+            "off",
+            "folder"
+          ],
+          "enumDescriptions": [
+            "Disable grouping",
+            "Group by folder"
+          ],
+          "default": "folder",
+          "markdownDescription": "Group orphans report entries by.",
+          "scope": "resource"
+        },
         "foam.dateSnippets.afterCompletion": {
           "type": "string",
           "default": "createNote",
@@ -162,6 +240,11 @@
           "type": "number",
           "default": 24,
           "description": "The maximum title length before being abbreviated. Set to 0 or less to disable."
+        },
+        "foam.graph.style": {
+          "type": "object",
+          "description": "Custom graph styling settings. An example is present in the documentation.",
+          "default": {}
         }
       }
     },
@@ -176,7 +259,7 @@
     "build": "tsc -p ./",
     "pretest": "yarn build",
     "test": "node ./out/test/run-tests.js",
-    "lint": "eslint src --ext ts",
+    "lint": "tsdx lint",
     "clean": "rimraf out",
     "watch": "tsc --build ./tsconfig.json ../foam-core/tsconfig.json --watch",
     "vscode:start-debugging": "yarn clean && yarn watch",
@@ -196,7 +279,8 @@
     "@types/dateformat": "^3.0.1",
     "@types/glob": "^7.1.1",
     "@types/node": "^13.11.0",
-    "@types/vscode": "^1.45.1",
+    "@types/remove-markdown": "^0.1.1",
+    "@types/vscode": "^1.47.1",
     "@typescript-eslint/eslint-plugin": "^2.30.0",
     "@typescript-eslint/parser": "^2.30.0",
     "babel-jest": "^26.2.2",
@@ -212,6 +296,9 @@
   },
   "dependencies": {
     "dateformat": "^3.0.3",
-    "foam-core": "^0.7.4"
+    "foam-core": "^0.9.0",
+    "gray-matter": "^4.0.2",
+    "micromatch": "^4.0.2",
+    "remove-markdown": "^0.3.0"
   }
 }

@@ -7,10 +7,14 @@ import {
   TextEditor,
   workspace,
   Uri,
-  Selection
-} from "vscode";
-import * as fs from "fs";
-import { Logger } from "foam-core";
+  Selection,
+  MarkdownString,
+  version,
+} from 'vscode';
+import * as fs from 'fs';
+import { Logger } from 'foam-core';
+import matter from 'gray-matter';
+import removeMarkdown from 'remove-markdown';
 
 interface Point {
   line: number;
@@ -18,34 +22,34 @@ interface Point {
   offset?: number;
 }
 
-export const docConfig = { tab: "  ", eol: "\r\n" };
+export const docConfig = { tab: '  ', eol: '\r\n' };
 
 export const mdDocSelector = [
-  { language: "markdown", scheme: "file" },
-  { language: "markdown", scheme: "untitled" }
+  { language: 'markdown', scheme: 'file' },
+  { language: 'markdown', scheme: 'untitled' },
 ];
 
 export function loadDocConfig() {
   // Load workspace config
   let activeEditor = window.activeTextEditor;
   if (!activeEditor) {
-    Logger.debug("Failed to load config, no active editor");
+    Logger.debug('Failed to load config, no active editor');
     return;
   }
 
-  docConfig.eol = activeEditor.document.eol === EndOfLine.CRLF ? "\r\n" : "\n";
+  docConfig.eol = activeEditor.document.eol === EndOfLine.CRLF ? '\r\n' : '\n';
 
   let tabSize = Number(activeEditor.options.tabSize);
   let insertSpaces = activeEditor.options.insertSpaces;
   if (insertSpaces) {
-    docConfig.tab = " ".repeat(tabSize);
+    docConfig.tab = ' '.repeat(tabSize);
   } else {
-    docConfig.tab = "\t";
+    docConfig.tab = '\t';
   }
 }
 
 export function isMdEditor(editor: TextEditor) {
-  return editor && editor.document && editor.document.languageId === "markdown";
+  return editor && editor.document && editor.document.languageId === 'markdown';
 }
 
 export function detectGeneratedCode(
@@ -61,7 +65,7 @@ export function detectGeneratedCode(
   if (headerLine < 0 || headerLine >= footerLine) {
     return {
       range: null,
-      lines: []
+      lines: [],
     };
   }
 
@@ -70,7 +74,7 @@ export function detectGeneratedCode(
       new Position(headerLine, 0),
       new Position(footerLine, lines[footerLine].length + 1)
     ),
-    lines: lines.slice(headerLine + 1, footerLine + 1)
+    lines: lines.slice(headerLine + 1, footerLine + 1),
   };
 }
 
@@ -83,9 +87,9 @@ export function getText(range: Range): string {
 }
 
 export function dropExtension(path: string): string {
-  const parts = path.split(".");
+  const parts = path.split('.');
   parts.pop();
-  return parts.join(".");
+  return parts.join('.');
 }
 
 /**
@@ -103,17 +107,17 @@ export const astPositionToVsCodePosition = (point: Point): Position => {
  */
 export function removeBrackets(s: string): string {
   // take in the string, split on space
-  const stringSplitBySpace = s.split(" ");
+  const stringSplitBySpace = s.split(' ');
 
   // loop through words
   const modifiedWords = stringSplitBySpace.map(currentWord => {
-    if (currentWord.includes("[[")) {
+    if (currentWord.includes('[[')) {
       // all of these transformations will turn this "[[you-are-awesome]]"
       // to this "you are awesome"
-      let word = currentWord.replace(/(\[\[)/g, "");
-      word = word.replace(/(\]\])/g, "");
-      word = word.replace(/(.mdx|.md|.markdown)/g, "");
-      word = word.replace(/[-]/g, " ");
+      let word = currentWord.replace(/(\[\[)/g, '');
+      word = word.replace(/(\]\])/g, '');
+      word = word.replace(/(.mdx|.md|.markdown)/g, '');
+      word = word.replace(/[-]/g, ' ');
 
       // then we titlecase the word so "you are awesome"
       // becomes "You Are Awesome"
@@ -125,7 +129,7 @@ export function removeBrackets(s: string): string {
     return currentWord;
   });
 
-  return modifiedWords.join(" ");
+  return modifiedWords.join(' ');
 }
 
 /**
@@ -135,9 +139,9 @@ export function removeBrackets(s: string): string {
  */
 export function toTitleCase(word: string): string {
   return word
-    .split(" ")
+    .split(' ')
     .map(word => word[0].toUpperCase() + word.substring(1))
-    .join(" ");
+    .join(' ');
 }
 
 /**
@@ -183,4 +187,77 @@ export async function focusNote(notePath: string, moveCursorToEnd: boolean) {
     const { range } = editor.document.lineAt(lineCount - 1);
     editor.selection = new Selection(range.end, range.end);
   }
+}
+
+export function getContainsTooltip(titles: string[]): string {
+  const TITLES_LIMIT = 5;
+  const ellipsis = titles.length > TITLES_LIMIT ? ',...' : '';
+  return `Contains "${titles.slice(0, TITLES_LIMIT).join('", "')}"${ellipsis}`;
+}
+
+/**
+ * Depending on the current vscode version, returns a MarkdownString of the
+ * note content casted as string or returns a simple string
+ * MarkdownString is only available from 1.52.1 onwards
+ * https://code.visualstudio.com/updates/v1_52#_markdown-tree-tooltip-api
+ * @param note A Foam Note
+ */
+export function getNoteTooltip(content: string): string {
+  const STABLE_MARKDOWN_STRING_API_VERSION = '1.52.1';
+  const strippedContent = stripFrontMatter(stripImages(content));
+
+  if (version >= STABLE_MARKDOWN_STRING_API_VERSION) {
+    return formatMarkdownTooltip(strippedContent) as any;
+  }
+
+  return formatSimpleTooltip(strippedContent);
+}
+
+export function formatMarkdownTooltip(content: string): MarkdownString {
+  const LINES_LIMIT = 16;
+  const { excerpt, lines } = getExcerpt(content, LINES_LIMIT);
+  const totalLines = content.split('\n').length;
+  const diffLines = totalLines - lines;
+  const ellipsis = diffLines > 0 ? `\n\n[...] *(+ ${diffLines} lines)*` : '';
+  return new MarkdownString(`${excerpt}${ellipsis}`);
+}
+
+export function formatSimpleTooltip(content: string): string {
+  const CHARACTERS_LIMIT = 200;
+  const flatContent = removeMarkdown(content)
+    .replace(/\r?\n|\r/g, ' ')
+    .replace(/\s+/g, ' ');
+  const extract = flatContent.substr(0, CHARACTERS_LIMIT);
+  const ellipsis = flatContent.length > CHARACTERS_LIMIT ? '...' : '';
+  return `${extract}${ellipsis}`;
+}
+
+export function getExcerpt(
+  markdown: string,
+  maxLines: number
+): { excerpt: string; lines: number } {
+  const OFFSET_LINES_LIMIT = 5;
+  const paragraphs = markdown.replace(/\r\n/g, '\n').split('\n\n');
+  const excerpt: string[] = [];
+  let lines = 0;
+  for (const paragraph of paragraphs) {
+    const n = paragraph.split('\n').length;
+    if (lines > maxLines || lines + n - maxLines > OFFSET_LINES_LIMIT) {
+      break;
+    }
+    excerpt.push(paragraph);
+    lines = lines + n + 1;
+  }
+  return { excerpt: excerpt.join('\n\n'), lines };
+}
+
+export function stripFrontMatter(markdown: string): string {
+  return matter(markdown).content.trim();
+}
+
+export function stripImages(markdown: string): string {
+  return markdown.replace(
+    /!\[(.*)\]\([-/\\.A-Za-z]*\)/gi,
+    '$1'.length ? '[Image: $1]' : ''
+  );
 }

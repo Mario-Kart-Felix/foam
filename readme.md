@@ -1,11 +1,13 @@
-👀*This is an early stage project under rapid development. For updates join the [Foam community Discord](https://discord.gg/rtdZKgj)! 💬*
+👀*This is an early stage project under rapid development. For updates join the [Foam community Discord](https://foambubble.github.io/join-discord/g)! 💬*
 
 
 # Foam
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-60-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-62-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
+
+[![Discord Chat](https://img.shields.io/discord/729975036148056075?color=748AD9&label=discord%20chat&style=flat-square)](https://foambubble.github.io/join-discord/g)
 
 **Foam** is a personal knowledge management and sharing system inspired by [Roam Research](https://roamresearch.com/), built on [Visual Studio Code](https://code.visualstudio.com/) and [GitHub](https://github.com/).
 
@@ -37,6 +39,8 @@ Quick links to next documentation sections
 - [Features](https://foambubble.github.io/foam#features)
 - [Call To Adventure](https://foambubble.github.io/foam#call-to-adventure)
 - [Thanks and attribution](https://foambubble.github.io/foam#thanks-and-attribution)
+
+You can also browse the [docs folder](https://github.com/foambubble/foam/tree/master/docs).
 
 ## License
 
@@ -134,6 +138,8 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="http://brandonpugh.com"><img src="https://avatars1.githubusercontent.com/u/684781?v=4?s=60" width="60px;" alt=""/><br /><sub><b>Brandon Pugh</b></sub></a><br /><a href="https://github.com/foambubble/foam/commits?author=bpugh" title="Code">💻</a></td>
     <td align="center"><a href="https://max.davitt.me"><img src="https://avatars1.githubusercontent.com/u/27709025?v=4?s=60" width="60px;" alt=""/><br /><sub><b>Max Davitt</b></sub></a><br /><a href="https://github.com/foambubble/foam/commits?author=themaxdavitt" title="Documentation">📖</a></td>
     <td align="center"><a href="http://briananglin.me"><img src="https://avatars3.githubusercontent.com/u/2637602?v=4?s=60" width="60px;" alt=""/><br /><sub><b>Brian Anglin</b></sub></a><br /><a href="https://github.com/foambubble/foam/commits?author=anglinb" title="Documentation">📖</a></td>
+    <td align="center"><a href="http://deft.work"><img src="https://avatars1.githubusercontent.com/u/1455507?v=4?s=60" width="60px;" alt=""/><br /><sub><b>elswork</b></sub></a><br /><a href="https://github.com/foambubble/foam/commits?author=elswork" title="Documentation">📖</a></td>
+    <td align="center"><a href="http://leonh.fr/"><img src="https://avatars.githubusercontent.com/u/19996318?v=4?s=60" width="60px;" alt=""/><br /><sub><b>léon h</b></sub></a><br /><a href="https://github.com/foambubble/foam/commits?author=leonhfr" title="Code">💻</a></td>
   </tr>
 </table>
 

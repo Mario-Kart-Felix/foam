@@ -1,104 +1,125 @@
-import * as vscode from "vscode";
-import * as path from "path";
-import { FoamFeature } from "../types";
-import { Foam, Logger } from "foam-core";
-import { TextDecoder } from "util";
-import { getTitleMaxLength } from "../settings";
-import { isSome } from "../utils";
+import * as vscode from 'vscode';
+import * as path from 'path';
+import { FoamFeature } from '../types';
+import { Foam, Logger } from 'foam-core';
+import { TextDecoder } from 'util';
+import { getGraphStyle, getTitleMaxLength } from '../settings';
+import { isSome } from '../utils';
 
 const feature: FoamFeature = {
   activate: (context: vscode.ExtensionContext, foamPromise: Promise<Foam>) => {
-    vscode.commands.registerCommand("foam-vscode.show-graph", async () => {
-      const foam = await foamPromise;
-      const panel = await createGraphPanel(foam, context);
-
-      const onFoamChanged = _ => {
-        updateGraph(panel, foam);
-      };
-
-      const noteAddedListener = foam.notes.onDidAddNote(onFoamChanged);
-      const noteUpdatedListener = foam.notes.onDidUpdateNote(onFoamChanged);
-      const noteDeletedListener = foam.notes.onDidDeleteNote(onFoamChanged);
-      panel.onDidDispose(() => {
-        noteAddedListener.dispose();
-        noteUpdatedListener.dispose();
-        noteDeletedListener.dispose();
-      });
-
-      vscode.window.onDidChangeActiveTextEditor(e => {
-        if (e.document.uri.scheme === "file") {
-          const note = foam.notes.getNote(e.document.uri);
-          if (isSome(note)) {
-            panel.webview.postMessage({
-              type: "didSelectNote",
-              payload: note.uri.path
-            });
-          }
-        }
-      });
+    let panel: vscode.WebviewPanel | undefined = undefined;
+    vscode.workspace.onDidChangeConfiguration(event => {
+      if (event.affectsConfiguration('foam.graph.style')) {
+        const style = getGraphStyle();
+        panel.webview.postMessage({
+          type: 'didUpdateStyle',
+          payload: style,
+        });
+      }
     });
-  }
+
+    vscode.commands.registerCommand('foam-vscode.show-graph', async () => {
+      if (panel) {
+        const columnToShowIn = vscode.window.activeTextEditor
+          ? vscode.window.activeTextEditor.viewColumn
+          : undefined;
+        panel.reveal(columnToShowIn);
+      } else {
+        const foam = await foamPromise;
+        panel = await createGraphPanel(foam, context);
+        const onFoamChanged = _ => {
+          updateGraph(panel, foam);
+        };
+
+        const noteAddedListener = foam.notes.onDidAddNote(onFoamChanged);
+        const noteUpdatedListener = foam.notes.onDidUpdateNote(onFoamChanged);
+        const noteDeletedListener = foam.notes.onDidDeleteNote(onFoamChanged);
+        panel.onDidDispose(() => {
+          noteAddedListener.dispose();
+          noteUpdatedListener.dispose();
+          noteDeletedListener.dispose();
+          panel = undefined;
+        });
+
+        vscode.window.onDidChangeActiveTextEditor(e => {
+          if (e.document.uri.scheme === 'file') {
+            const note = foam.notes.getNote(e.document.uri);
+            if (isSome(note)) {
+              panel.webview.postMessage({
+                type: 'didSelectNote',
+                payload: note.uri.path,
+              });
+            }
+          }
+        });
+      }
+    });
+  },
 };
 
 function updateGraph(panel: vscode.WebviewPanel, foam: Foam) {
   const graph = generateGraphData(foam);
   panel.webview.postMessage({
-    type: "didUpdateGraphData",
-    payload: graph
+    type: 'didUpdateGraphData',
+    payload: graph,
   });
 }
 
 function generateGraphData(foam: Foam) {
   const graph = {
     nodes: {},
-    edges: new Set()
+    edges: new Set(),
   };
 
   foam.notes.getNotes().forEach(n => {
     const links = foam.notes.getForwardLinks(n.uri);
     graph.nodes[n.uri.path] = {
       id: n.uri.path,
-      type: "note",
+      type: n.properties.type ?? 'note',
       uri: n.uri,
-      title: cutTitle(n.title)
+      title: cutTitle(n.title),
     };
     links.forEach(link => {
       if (!(link.to.path in graph.nodes)) {
         graph.nodes[link.to.path] = {
           id: link.to,
-          type: "nonExistingNote",
+          type: 'placeholder',
           uri: `virtual:${link.to}`,
-          title: cutTitle(link.link.slug)
+          title:
+            'slug' in link.link
+              ? cutTitle(link.link.slug)
+              : cutTitle(link.link.label),
         };
       }
       graph.edges.add({
         source: link.from.path,
-        target: link.to.path
+        target: link.to.path,
       });
     });
   });
   return {
     nodes: graph.nodes,
-    links: Array.from(graph.edges)
+    links: Array.from(graph.edges),
   };
 }
 
 function cutTitle(title: string): string {
   const maxLen = getTitleMaxLength();
   if (maxLen > 0 && title.length > maxLen) {
-    return title.substring(0, maxLen).concat("...");
+    return title.substring(0, maxLen).concat('...');
   }
   return title;
 }
 
 async function createGraphPanel(foam: Foam, context: vscode.ExtensionContext) {
   const panel = vscode.window.createWebviewPanel(
-    "foam-graph",
-    "Foam Graph",
+    'foam-graph',
+    'Foam Graph',
     vscode.ViewColumn.Two,
     {
       enableScripts: true,
-      retainContextWhenHidden: true
+      retainContextWhenHidden: true,
     }
   );
 
@@ -107,22 +128,29 @@ async function createGraphPanel(foam: Foam, context: vscode.ExtensionContext) {
   panel.webview.onDidReceiveMessage(
     async message => {
       switch (message.type) {
-        case "webviewDidLoad":
+        case 'webviewDidLoad':
+          const styles = getGraphStyle();
+          panel.webview.postMessage({
+            type: 'didUpdateStyle',
+            payload: styles,
+          });
           updateGraph(panel, foam);
           break;
 
-        case "webviewDidSelectNode":
+        case 'webviewDidSelectNode':
           const noteUri = vscode.Uri.parse(message.payload);
           const selectedNote = foam.notes.getNote(noteUri);
 
-          const doc = await vscode.workspace.openTextDocument(
-            selectedNote.uri.path // vscode doesn't recognize the URI directly
-          );
-          vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+          if (isSome(selectedNote)) {
+            const doc = await vscode.workspace.openTextDocument(
+              selectedNote.uri.path // vscode doesn't recognize the URI directly
+            );
+            vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+          }
           break;
 
-        case "error":
-          Logger.error("An error occurred in the graph view", message.payload);
+        case 'error':
+          Logger.error('An error occurred in the graph view', message.payload);
           break;
       }
     },
@@ -138,27 +166,27 @@ async function getWebviewContent(
   panel: vscode.WebviewPanel
 ) {
   const webviewPath = vscode.Uri.file(
-    path.join(context.extensionPath, "static", "dataviz.html")
+    path.join(context.extensionPath, 'static', 'dataviz.html')
   );
   const file = await vscode.workspace.fs.readFile(webviewPath);
-  const text = new TextDecoder("utf-8").decode(file);
+  const text = new TextDecoder('utf-8').decode(file);
 
   const webviewUri = (fileName: string) =>
     panel.webview
       .asWebviewUri(
-        vscode.Uri.file(path.join(context.extensionPath, "static", fileName))
+        vscode.Uri.file(path.join(context.extensionPath, 'static', fileName))
       )
       .toString();
 
-  const graphDirectory = path.join("graphs", "default");
+  const graphDirectory = path.join('graphs', 'default');
   const textWithVariables = text
     .replace(
-      "${graphPath}",
-      "{{" + path.join(graphDirectory, "graph.js") + "}}"
+      '${graphPath}', // eslint-disable-line
+      '{{' + path.join(graphDirectory, 'graph.js') + '}}'
     )
     .replace(
-      "${graphStylesPath}",
-      "{{" + path.join(graphDirectory, "graph.css") + "}}"
+      '${graphStylesPath}', // eslint-disable-line
+      '{{' + path.join(graphDirectory, 'graph.css') + '}}'
     );
 
   // Basic templating. Will replace the script paths with the

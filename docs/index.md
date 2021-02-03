@@ -7,7 +7,7 @@ You can use **Foam** for organising your research, keeping re-discoverable notes
 **Foam** is free, open source, and extremely extensible to suit your personal workflow. You own the information you create with Foam, and you're free to share it, and collaborate on it with anyone you want.
 
 <p class="announcement">
-  <b>New!</b> Join <a href="https://discord.gg/rtdZKgj" target="_blank">Foam community Discord</a> for users and contributors!
+  <b>New!</b> Join <a href="https://foambubble.github.io/join-discord/w" target="_blank">Foam community Discord</a> for users and contributors!
 </p>
 
 <div class="website-only">
@@ -76,7 +76,7 @@ To learn more about how to use **Foam**, read the [[recipes]].
 
 Getting stuck in the setup? Read the [[frequently-asked-questions]].
 
-There are [[known-issues]], and I'm sure, many unknown issues! Please [report them on GitHub](http://github.com/foambubble/foam/issues)!
+Check our [issues on GitHub](http://github.com/foambubble/foam/issues) if you get stuck on something, and create a new one if something doesn't seem right!
 
 ## Features
 
@@ -183,6 +183,8 @@ If that sounds like something you're interested in, I'd love to have you along o
     <td align="center"><a href="http://brandonpugh.com"><img src="https://avatars1.githubusercontent.com/u/684781?v=4?s=60" width="60px;" alt=""/><br /><sub><b>Brandon Pugh</b></sub></a><br /><a href="https://github.com/foambubble/foam/commits?author=bpugh" title="Code">💻</a></td>
     <td align="center"><a href="https://max.davitt.me"><img src="https://avatars1.githubusercontent.com/u/27709025?v=4?s=60" width="60px;" alt=""/><br /><sub><b>Max Davitt</b></sub></a><br /><a href="https://github.com/foambubble/foam/commits?author=themaxdavitt" title="Documentation">📖</a></td>
     <td align="center"><a href="http://briananglin.me"><img src="https://avatars3.githubusercontent.com/u/2637602?v=4?s=60" width="60px;" alt=""/><br /><sub><b>Brian Anglin</b></sub></a><br /><a href="https://github.com/foambubble/foam/commits?author=anglinb" title="Documentation">📖</a></td>
+    <td align="center"><a href="http://deft.work"><img src="https://avatars1.githubusercontent.com/u/1455507?v=4?s=60" width="60px;" alt=""/><br /><sub><b>elswork</b></sub></a><br /><a href="https://github.com/foambubble/foam/commits?author=elswork" title="Documentation">📖</a></td>
+    <td align="center"><a href="http://leonh.fr/"><img src="https://avatars.githubusercontent.com/u/19996318?v=4?s=60" width="60px;" alt=""/><br /><sub><b>léon h</b></sub></a><br /><a href="https://github.com/foambubble/foam/commits?author=leonhfr" title="Code">💻</a></td>
   </tr>
 </table>
 
