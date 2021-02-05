@@ -21,8 +21,11 @@ describe('createFromTemplate', () => {
     });
   });
   describe('create-new-template', () => {
-    afterEach(() => {
+    afterEach(async () => {
       jest.clearAllMocks();
+      await workspace.fs.delete(Uri.file('.foam/templates/'), {
+        recursive: true
+      })
     });
 
     it('should create a new template', async () => {
@@ -42,7 +45,6 @@ describe('createFromTemplate', () => {
       const file = await workspace.fs.readFile(Uri.file(template));
       expect(window.showInputBox).toHaveBeenCalled();
       expect(file).toBeDefined();
-      await workspace.fs.delete(Uri.file(template));
     });
 
     it('can be cancelled', async () => {
